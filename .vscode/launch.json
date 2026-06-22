@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Employee API",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/employee/main.py",
+            "python": "${workspaceFolder}/employee/venv/bin/python",
+            "cwd": "${workspaceFolder}/employee",
+            "console": "integratedTerminal"
+        }
+    ]
+}

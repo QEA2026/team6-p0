@@ -7,7 +7,7 @@ from typing import Optional
 
 # Root project directory path
 _DEFAULT_DB_PATH = os.path.join(os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))), 'expense_manager.db') 
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'p0.db')
 
 class DatabaseConnection:
     """Handles SQLite database connections and initalizations"""
