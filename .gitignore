@@ -5,3 +5,11 @@
 # Java / Maven
 target/
 *.class
+
+# Python
+venv
+__pycache__/
+*.pyc
+
+# Editors
+.vscode
