@@ -1,5 +1,3 @@
-# Flask setup 
-
 from flask import Flask, request, jsonify, current_app
 from repository import (
     DatabaseConnection,
@@ -21,7 +19,7 @@ def create_app():
 
     # Initalize repositories
     user_repository = UserRepository(db_connection)
-    
+
     # Initalize services
     jwt_secret_key = app.config['SECRET_KEY']  # Use Flask's secret key for JWT
     auth_service = AuthenticationService(user_repository, jwt_secret_key)
@@ -48,12 +46,13 @@ def create_app():
                 return jsonify(user)
             # User does not exist in the db
             return jsonify({"error": "Unauthorized"}), 401
-            
+
         except:
             return jsonify({"error": "Bad Request"}), 400
-        
+
     return app
-        
+
+
 def create_sample_data():
     """Create a sample user for testing"""
     db_connection = DatabaseConnection()
@@ -73,14 +72,16 @@ def create_sample_data():
         print("Created Sample Employee: employee1/password1")
         
 if __name__ == "__main__":
+        # Create app
     app = create_app()
-    create_sample_data()
 
+    # Startup messages
     print("Starting Employee Management API...")
     print("Available endpoints:")
     print("POST /login - Employee login")
 
+    # Fill with sample data
+    create_sample_data()
+
+    # Run app
     app.run(port=3000, debug=True)
-
-
-    
