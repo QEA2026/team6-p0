@@ -7,14 +7,18 @@ public class Expense {
     private double amount;
     private String description;
     private String date;
+    private String category;
+    private String status;
 
     //constructor
-    public Expense(int id, int userId, double amount, String description, String date){
+    public Expense(int id, int userId, double amount, String description, String date, String status, String category){
         this.id = id;
         this.userId = userId;
         this.amount = amount;
         this.description = description;
         this.date = date;
+        this.status = status;
+        this.category = category;
     }
 
     //getters
@@ -33,6 +37,12 @@ public class Expense {
     public String getDate(){
         return this.date;
     }
+    public String getStatus(){
+        return this.status;
+    }
+    public String getCategory(){
+        return this.category;
+    }
 
     //setters
     public void setAmount(double amount){
@@ -43,5 +53,11 @@ public class Expense {
     }
     public void setDate(String date){
         this.date = date;
+    }
+    public void setStatus(String status){
+        this.status = status;
+    }
+    public void setCategory(String category){
+        this.category = category;
     }
 }
