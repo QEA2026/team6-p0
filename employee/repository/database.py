@@ -35,4 +35,17 @@ class DatabaseConnection:
                 )
             """)
             conn.commit()
+
+            # Create expenses table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS expenses (
+                    id INTEGER PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    amount REAL NOT NULL,
+                    description TEXT NOT NULL,
+                    date TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES user (id)
+                         )
+                         """)
+            
             

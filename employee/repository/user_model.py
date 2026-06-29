@@ -7,7 +7,7 @@ from typing import Optional
 
 @dataclass
 class User:
-    id: Optional[int] # optional because database can set this for you after you save
+    id: Optional[int]  # optional because database can set this for you after you save
     username: str
     password: str
     role: str

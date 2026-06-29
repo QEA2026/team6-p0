@@ -63,7 +63,6 @@ def create_sample_data():
     # Create a sample employee user if it doesn't exist
     if not user_repository.find_by_username("employee1"):
         sample_employee = User(
-            id=None,
             username="employee1",
             password="password1",
             role="Employee"
