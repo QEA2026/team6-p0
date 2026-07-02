@@ -49,8 +49,7 @@ def create_app():
 
         except:
             return jsonify({"error": "Bad Request"}), 400
-
-    return app
+        
 
 
 def create_sample_data():
