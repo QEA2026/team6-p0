@@ -2,21 +2,21 @@ package org.expensemanager.model;
 
 public class Approval {
     private int id;
-    private int expenseId;
+    private int expense_id;
     private String status;
 
     private Integer reviewer; // not int bc has to be nullable (null until a manager reviews it)
     private String comment;
-    private String reviewDate;
+    private String review_date;
 
     //constructor
-    public Approval(int id, int expenseId, String status, Integer reviewer, String comment, String reviewDate){
+    public Approval(int id, int expense_id, String status, Integer reviewer, String comment, String review_date){
         this.id = id;
-        this.expenseId = expenseId;
+        this.expense_id = expense_id;
         this.status = status;
         this.reviewer = reviewer;
         this.comment = comment;
-        this.reviewDate = reviewDate;
+        this.review_date = review_date;
     }
 
     //getters
@@ -24,7 +24,7 @@ public class Approval {
         return this.id;
     }
     public int getExpenseId(){
-        return this.expenseId;
+        return this.expense_id;
     }
     public String getStatus(){
         return this.status;
@@ -36,7 +36,7 @@ public class Approval {
         return this.comment;
     }
     public String getReviewDate(){
-        return this.reviewDate;
+        return this.review_date;
     }
 
 
@@ -50,8 +50,8 @@ public class Approval {
     public void setComment(String comment){
         this.comment = comment;
     }
-    public void setReviewDate(String reviewDate){
-        this.reviewDate = reviewDate;
+    public void setReviewDate(String review_date){
+        this.review_date = review_date;
     }
 
 
