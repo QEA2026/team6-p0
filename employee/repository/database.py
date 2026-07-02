@@ -32,6 +32,25 @@ class DatabaseConnection:
                     username TEXT UNIQUE NOT NULL,
                     password NOT NULL,
                     role TEXT NOT NULL
+                ) """) 
+            conn.commit()
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS expenses (
+                    id INTEGER PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id),
+                    amount NUMERICAL CHECK(amount>0),
+                    description VARCHAR NOT NULL,
+                    date DATE NOT NULL
+                ) """) 
+            conn.commit()
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS approvals (
+                    id INTEGER PRIMARY KEY,
+                    expense_id INTEGER REFERENCES expenses(id),
+                    status VARCHAR NOT NULL,
+                    reviewer INTEGER,
+                    comment VARCHAR,
+                    review_date DATE
                 )
             """)
             conn.commit()
