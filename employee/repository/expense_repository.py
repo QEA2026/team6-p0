@@ -31,11 +31,10 @@ class ExpenseRepository:
         with self.db_connection.get_connection() as conn:
             expenses = []
             cursor = conn.execute("SELECT id, user_id, amount, description, date FROM expenses WHERE user_id = ?",
-                                  (user_id))
-            row = cursor.fetchone()
-            for row in cursor.fetchall:
-                expenses.append(Expense(id=row['id'], user_id=row['user_id'], amount=row['amount'], description=[
-                                'description'], date=['date']))
+                                  (user_id,))
+            for row in cursor.fetchall():
+                expenses.append(Expense(id=row['id'], user_id=row['user_id'], amount=row['amount'], description=row[
+                                'description'], date=row['date']))
             return expenses
 
     def update(self, expense: Expense):

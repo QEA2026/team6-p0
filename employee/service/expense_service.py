@@ -5,7 +5,7 @@ from repository.expense_repository import ExpenseRepository
 
 class ExpenseService:
 
-    def init(self, expense_repository: ExpenseRepository):
+    def __init__(self, expense_repository: ExpenseRepository):
         self.expense_repository = expense_repository
 
     def submit_expense(self, user_id: int, amount: float, description: str, date: str = None) -> Expense:
