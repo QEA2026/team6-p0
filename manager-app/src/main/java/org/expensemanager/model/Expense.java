@@ -9,7 +9,7 @@ public class Expense {
     private String date;
 
     //constructor
-    public Expense(int id, int user_id, double amount, String description, String date, String status, String category){
+    public Expense(int id, int user_id, double amount, String description, String date){
         this.id = id;
         this.user_id = user_id;
         this.amount = amount;
