@@ -1,0 +1,28 @@
+erDiagram
+    users {
+        INTEGER id PK
+        TEXT username
+        TEXT password
+        TEXT role
+    }
+
+    expenses {
+        INTEGER id PK
+        INTEGER user_id FK
+        REAL amount
+        TEXT description
+        TEXT date
+    }
+
+    approvals {
+        INTEGER id PK
+        INTEGER expense_id FK
+        TEXT status
+        INTEGER reviewer FK
+        TEXT comment
+        TEXT review_date
+    }
+
+    users ||--o{ expenses : "submits"
+    expenses ||--|| approvals : "has"
+    users ||--o{ approvals : "reviews"

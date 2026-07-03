@@ -1,7 +1,5 @@
 package org.expensemanager.dao;
 import org.expensemanager.model.Approval;
-import org.expensemanager.dao.AprovalDao;
-import org.expensemanager.model.Expense;
 import org.expensemanager.util.ConnectionUtil;
 
 import java.sql.Connection;

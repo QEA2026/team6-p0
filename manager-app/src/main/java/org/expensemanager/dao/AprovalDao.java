@@ -3,5 +3,5 @@ import org.expensemanager.model.Approval;
 
 public interface AprovalDao {
     public Approval getById(int id);
-    public Approval submitApproval()
+    public void submitApproval(int expense_id, String status, int reviewer, String comment);
 }
