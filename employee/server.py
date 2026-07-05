@@ -32,6 +32,7 @@ def create_app():
     # Inject service into flask app content
     app.auth_service = auth_service
 
+    # POST 
     @app.route("/login", methods=['POST'])
     def login():
         """Employee login endpoint."""
@@ -46,6 +47,8 @@ def create_app():
             password = data['password']
 
             user = auth_service.authenticate_user(username, password)
+
+            # If user is valid, return jwt token
             if user:
                 jwt_token = auth_service.generate_jwt_token(user)
                 return jsonify(jwt_token)
@@ -56,24 +59,25 @@ def create_app():
         except Exception as e:
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
-    
-    @app.route("/user", methods=['POST'])
+        
+    # GET User from JWT token
+    @app.route("/user", methods=['GET'])
     def get_user_from_jwt():
         """Get user from jwt token endpoint"""
         try: 
-            # Validate body exists
-            data = request.get_json()
+            # Authenticate User
+            auth = request.headers.get("Authorization") # if missing, none
 
-            if not data:
-                return jsonify({"error": "Request Body Required"}), 400
+            if not auth or not auth.startswith("Bearer "):
+                return jsonify({"errror": "Missing or malformed Authentication header"}), 401
             
-            jwt_token = data['jwt_token']
+            jwt_token = auth.split(" ", 1)[1]
 
-            # Validate User Token
             validate = auth_service.validate_jwt_token(jwt_token)
             if not validate:
                 return jsonify({"error": "Unauthorized"}), 401
             
+            # Return user
             user = auth_service.get_user_from_token(jwt_token)
 
             if user:
@@ -85,6 +89,7 @@ def create_app():
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
         
+    # POST expense to User ID
     @app.route("/expense", methods=['POST'])
     def insert_employee_expense():
         """Endpoint for the user to insert an expense."""
@@ -94,16 +99,22 @@ def create_app():
 
             if not data:
                     return jsonify({"error": "Request Body Required"}), 400
+            
+            # Authenticate User
+            auth = request.headers.get("Authorization")  # if missing, none
 
-            jwt_token = data['jwt_token']
+            if not auth or not auth.startswith("Bearer "):
+                return jsonify({"errror": "Missing or malformed Authentication header"}), 401
 
-            # Validate User Token
+            jwt_token = auth.split(" ", 1)[1]
+
             validate = auth_service.validate_jwt_token(jwt_token)
             if not validate:
                 return jsonify({"error": "Unauthorized"}), 401
             
-            user_id = int(data['user_id'])
-            amount = float(data['amount'])
+            # Submit expense
+            user_id = data['user_id']
+            amount = data['amount']
             description = data['description']
 
             expense = expense_service.submit_expense(user_id, amount, description)
@@ -113,32 +124,145 @@ def create_app():
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
     
+    # GET all expenses
     @app.route("/expense", methods=['GET'])
     def get_employee_expense_history():
+        """Returns all expenses for the current user"""
         try:
-            """Returns all expenses for the current user"""
-            # Validate body exists
-            data = request.get_json()
+            # Authenticate user
+            auth = request.headers.get("Authorization")  # if missing, none
 
-            if not data:
-                return jsonify({"error": "Request Body Required"}), 400
+            if not auth or not auth.startswith("Bearer "):
+                return jsonify({"errror": "Missing or malformed Authentication header"}), 401
 
-            jwt_token = data['jwt_token']
+            jwt_token = auth.split(" ", 1)[1]
 
-            # Validate User Token
             validate = auth_service.validate_jwt_token(jwt_token)
             if not validate:
                 return jsonify({"error": "Unauthorized"}), 401
-            user_id = int(data['user_id'])
+            
+            # Get user from token
+            user = auth_service.get_user_from_token(jwt_token)
 
+            if not user:
+                return jsonify({"error": "Unauthorized"}), 401
+
+            user_id = user.id
+
+            # Return all expenses for the user
             expenses = expense_service.get_user_expenses(user_id)
 
             return jsonify(expenses)
         except Exception as e:
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
+        
+    # GET expense by id
+    @app.route("/expense/<expense_id>", methods=['GET'])
+    def get_expense_by_id(expense_id):
+        try: 
+            # Authenticate user
+            auth = request.headers.get("Authorization")  # if missing, none
 
+            if not auth or not auth.startswith("Bearer "):
+                return jsonify({"errror": "Missing or malformed Authentication header"}), 401
 
+            jwt_token = auth.split(" ", 1)[1]
+
+            validate = auth_service.validate_jwt_token(jwt_token)
+            if not validate:
+                return jsonify({"error": "Unauthorized"}), 401
+            
+            # Get user from token
+            user = auth_service.get_user_from_token(jwt_token)
+
+            if not user:
+                return jsonify({"error": "Unauthorized"}), 401
+            
+            # Get expense by id
+            expense = expense_service.get_expense_by_id(expense_id, user.id)
+
+            if not expense:
+                return jsonify({"error": "Unauthorized or expense does not exist."}), 400
+            
+            return jsonify(expense)
+            
+        except Exception as e:
+            current_app.logger.exception(e)
+            return jsonify({"error": "Bad Request"}), 400
+
+    # Patch existing employee expense
+    @app.route("/expense", methods=['PATCH'])
+    def patch_employee_expense():
+        """Patches an expense record"""
+        try:
+            # Validate body exists
+            data = request.get_json()
+
+            if not data:
+                return jsonify({"error": "Request Body Required"}), 400
+
+            # Authenticate user
+            auth = request.headers.get("Authorization")  # if missing, none
+
+            if not auth or not auth.startswith("Bearer "):
+                return jsonify({"errror": "Missing or malformed Authentication header"}), 401
+
+            jwt_token = auth.split(" ", 1)[1]
+
+            validate = auth_service.validate_jwt_token(jwt_token)
+            if not validate:
+                return jsonify({"error": "Unauthorized"}), 401
+            
+            # Get updated expense fields
+            user_id = data['user_id']
+            expense_id = data['id']
+            amount = data['amount']
+            description = data['description']
+            
+            # Update and return expense
+            updated_expense = expense_service.update_expense(expense_id, user_id, amount, description)
+            return jsonify(updated_expense)
+
+        except Exception as e:
+            current_app.logger.exception(e)
+            return jsonify({"error": "Bad Request"}), 400
+        
+    @app.route("/expense", methods=['DELETE'])
+    def delete_employee_expense():
+        try:
+            # Validate body exists
+            data = request.get_json()
+
+            if not data:
+                return jsonify({"error": "Request Body Required"}), 400
+
+            # Authenticate user
+            auth = request.headers.get("Authorization")  # if missing, none
+
+            if not auth or not auth.startswith("Bearer "):
+                return jsonify({"errror": "Missing or malformed Authentication header"}), 401
+
+            jwt_token = auth.split(" ", 1)[1]
+
+            validate = auth_service.validate_jwt_token(jwt_token)
+            if not validate:
+                return jsonify({"error": "Unauthorized"}), 401
+            
+            expense_id = data['expense_id']
+            
+            result = expense_service.delete_expense(expense_id)
+
+            if result == False:
+                return jsonify({"error": "Failed to delete expense."}), 400
+            
+            return jsonify({"message": "Successfully deleted expense"})
+            
+        except Exception as e:
+            current_app.logger.exception(e)
+            return jsonify({"error": "Bad Request"}), 400
+
+            
     return app
         
 

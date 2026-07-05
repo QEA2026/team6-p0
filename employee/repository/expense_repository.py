@@ -21,10 +21,10 @@ class ExpenseRepository:
     def find_by_id(self, expense_id: int): 
         with self.db_connection.get_connection() as conn:
             cursor = conn.execute("SELECT id, user_id, amount, description, date FROM expenses WHERE id = ?", 
-                                  (expense_id))
+                                  (expense_id,))
             row = cursor.fetchone()
             if(row):
-                return Expense(id=row['id'],user_id=['user_id'],amount=['amount'],description=['description'],date=['date'])
+                return Expense(id=row['id'], user_id=row['user_id'], amount=row['amount'], description=row['description'], date=row['date'])
         return None
         
     def find_by_user_id(self, user_id: int):
