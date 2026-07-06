@@ -219,9 +219,10 @@ def create_app():
             expense_id = data['id']
             amount = data['amount']
             description = data['description']
+            date = data['date']
             
             # Update and return expense
-            updated_expense = expense_service.update_expense(expense_id, user_id, amount, description)
+            updated_expense = expense_service.update_expense(expense_id, user_id, amount, description, date)
             return jsonify(updated_expense)
 
         except Exception as e:
@@ -250,8 +251,9 @@ def create_app():
                 return jsonify({"error": "Unauthorized"}), 401
             
             expense_id = data['expense_id']
+            user_id = data['user_id']
             
-            result = expense_service.delete_expense(expense_id)
+            result = expense_service.delete_expense(expense_id, user_id)
 
             if result == False:
                 return jsonify({"error": "Failed to delete expense."}), 400

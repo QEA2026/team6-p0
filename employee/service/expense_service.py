@@ -65,7 +65,7 @@ class ExpenseService:
         if not result or result.user_id != user_id:
             return None
         
-        return self.expense_repository.delete(result)
+        return self.expense_repository.delete(result.id)
     
     def get_user_expenses(self, user_id) -> List[Expense]:
         # Get all expenses for the current user

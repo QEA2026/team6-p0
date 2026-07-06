@@ -46,8 +46,8 @@ class ExpenseRepository:
     
     def delete(self, expense_id: int):
         with self.db_connection.get_connection() as conn:
-            cursor = conn.execute("DELETE FROM expense WHERE id = ?",
-                                  (expense_id)
+            cursor = conn.execute("DELETE FROM expenses WHERE id = ?",
+                                  (expense_id,)
                                   )
             conn.commit()
         # Number of rows effected by the cursor statement, TRUE means successful delete and vice versa
