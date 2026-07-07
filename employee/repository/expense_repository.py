@@ -14,6 +14,13 @@ class ExpenseRepository:
                 )
             # return the last row id inserted by this cursor
             expense.id = cursor.lastrowid
+
+            # Create initial approval record with pending status
+            conn.execute(
+                "INSERT INTO approvals (expense_id, status) VALUES (?, 'pending')",
+                (expense.id,)
+            )
+
             conn.commit()
         return expense
 
@@ -45,9 +52,11 @@ class ExpenseRepository:
     
     def delete(self, expense_id: int):
         with self.db_connection.get_connection() as conn:
-            cursor = conn.execute("DELETE FROM expenses WHERE id = ?",
-                                  (expense_id,)
-                                  )
+            # Delete approval record first (foreign key constraint)
+            conn.execute("DELETE FROM approvals WHERE expense_id = ?", (expense_id,))
+            
+            cursor = conn.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
             conn.commit()
+
         # Number of rows effected by the cursor statement, TRUE means successful delete and vice versa
         return cursor.rowcount > 0

@@ -1,5 +1,4 @@
 # Flask setup 
-import traceback;
 import requests;
 import pandas as pd
 from datetime import datetime
@@ -39,7 +38,6 @@ def login_page():
                             input("Press enter to continue.")
             except:
                 print("An error occurred! Please try again.")
-                traceback.print_exc()
                 input("Press enter to continue.")
 
 def insert_expense(user, jwt_token):
@@ -93,7 +91,7 @@ def insert_expense(user, jwt_token):
                 choice = None
                 while choice != "1" or choice != "2":
                     page_header("INSERT EXPENSE", user["username"])
-                    print(f"Expense Insert Failed: {expense.json()}")
+                    print(f"Expense Insert Failed: {expense.json()["error"]}")
                     print("1. Retry Expense Insert")
                     print("2. Main Menu")
                     choice = input("Enter Selection: ")
@@ -105,22 +103,26 @@ def insert_expense(user, jwt_token):
                         print("Invalid selection. Try again.")
                         input("Press enter to continue.")
 
-def view_expenses(user, jwt_token):
+def pending_expenses(user, jwt_token):
     while True:
-        page_header("EXPENSES", user["username"])
+        page_header("PENDING EXPENSES", user["username"])
 
         try:
-            expenses = requests.get("http://localhost:3000/expense", headers={"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"})
+            expenses = requests.get("http://localhost:3000/expense/pending", headers={"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"})
 
             if (expenses.ok):
                 while True:
-                    page_header("EXPENSES", user["username"])
+                    page_header("PENDING EXPENSES", user["username"])
                     if len(expenses.json()) == 0:
-                        input("No expenses to display. Press Enter to return to main menu.")
+                        input("No expenses to display. Press enter to return to main menu.")
                         return
-                    df = pd.DataFrame(expenses.json())
+                    rows = []
+                    for expense, approval in expenses.json():
+                        row = {**expense, "status": approval['status']}
+                        rows.append(row)
+                    df = pd.DataFrame(rows)
                     pd.set_option("display.float_format", "{:,.2f}".format)
-                    df = df[["id", "amount", "description", "date"]]
+                    df = df[["id", "amount", "description", "category", "date", "status"]]
                     print(df)
                     print("1. Update Expense")
                     print("2. Delete Expense")
@@ -145,19 +147,18 @@ def view_expenses(user, jwt_token):
                         print("Invalid selection. Try again.")
                         input("Press enter to continue.")
             else:
-                page_header("EXPENSES", user["username"])
-                print("Failed to display expenses.")
+                page_header("PENDING EXPENSES", user["username"])
+                print(f"Failed to Display Pending Expenses: {expenses.json()["error"]}")
                 input("Press enter to return to main menu.")
                 return
         except:
             print("An error occurred! Please try again.")
-            traceback.print_exc()
             input("Press enter to continue.")
             break
 
 def update_expense(user, jwt_token, expense_id):
     while True:
-        page_header("UPDATE EXPENSE", user["username"])
+        page_header("UPDATE PENDING EXPENSE", user["username"])
         expense = requests.get(f"http://localhost:3000/expense/{expense_id}",
                                headers={"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"})
         amount = expense.json()["amount"]
@@ -166,7 +167,7 @@ def update_expense(user, jwt_token, expense_id):
         date = expense.json()["date"]
         if expense.ok:
             while True:
-                page_header("UPDATE EXPENSE", user["username"], expense_id)
+                page_header("UPDATE PENDING EXPENSE", user["username"], expense_id)
                 print(f"1: Amount - {amount}")
                 print(f"2: Description - {description}")
                 print(f"3: Category - {category}")
@@ -177,7 +178,7 @@ def update_expense(user, jwt_token, expense_id):
                     new_amount = None
                     while not new_amount:
                         try:
-                            page_header("UPDATE EXPENSE", user["username"], expense_id, "AMOUNT")
+                            page_header("UPDATE PENDING EXPENSE", user["username"], expense_id, "AMOUNT")
                             new_amount = float(input("Enter updated amount: "))
                         except ValueError:
                             input("Please input a valid number. Press enter to try again.")
@@ -190,12 +191,12 @@ def update_expense(user, jwt_token, expense_id):
                         input("Press enter to return to update page.")
                         break
                     else:
-                        print("Failed to update amount.")
+                        print(f"Failed to Update Amount: {updated_expense.json()["error"]}")
                         input("Press enter to return to update page.")
                         break
                 elif (choice == "2"):
                     new_description = None
-                    page_header("UPDATE EXPENSE",user["username"], expense_id, "DESCRIPTION")
+                    page_header("UPDATE PENDING EXPENSE",user["username"], expense_id, "DESCRIPTION")
                     new_description = input("Enter updated description: ")
 
                     updated_expense = requests.patch("http://localhost:3000/expense",
@@ -207,13 +208,13 @@ def update_expense(user, jwt_token, expense_id):
                         input("Press enter to return to update page.")
                         break
                     else:
-                        print("Failed to update description.")
+                        print(f"Failed to update description: {updated_expense.json()["error"]}")
                         input("Press enter to return to update page.")
                         break
                 elif (choice == "3"):
                     new_category = None
                     while not new_category:
-                        page_header("UPDATE EXPENSE",
+                        page_header("UPDATE PENDING EXPENSE",
                                     user["username"], expense_id, "CATEGORY")
                         new_category = input("Enter updated category: ")
                         if new_category.strip().lower() not in ["supplies", "meals", "entertainment", "travel", "lodging", "other"]:
@@ -229,13 +230,13 @@ def update_expense(user, jwt_token, expense_id):
                         input("Press enter to return to update page.")
                         break
                     else:
-                        print("Failed to update category.")
+                        print(f"Failed to update category: {updated_expense.json()["error"]}")
                         input("Press enter to return to update page.")
                         break
                 elif (choice == "4"):
                     new_date = None
                     while not new_date:
-                        page_header("UPDATE EXPENSE", user["username"], expense_id, "DATE")
+                        page_header("UPDATE PENDING EXPENSE", user["username"], expense_id, "DATE")
                         new_date = input("Enter updated date: ")
                         if not validate_date(new_date):
                             new_date = None
@@ -249,7 +250,7 @@ def update_expense(user, jwt_token, expense_id):
                         input("Press enter to return to update page.")
                         break
                     else:
-                        print("Failed to update date.")
+                        print(f"Failed to update date: {updated_expense.json()["error"]}")
                         input("Press enter to return to update page.")
                         break
                 elif (choice == "5"):
@@ -260,9 +261,8 @@ def update_expense(user, jwt_token, expense_id):
         else:
             choice = None
             while choice != "1" or choice != "2":
-                page_header("UPDATE EXPENSE", user["username"])
-                print("Error: " + expense.json()["error"])
-                print("Failed to update expense.")
+                page_header("UPDATE PENDING EXPENSE", user["username"])
+                print(f"Failed to update expense: {expense.json()["error"]}")
                 print("1. Retry Expense Update")
                 print("2. Return to Expenses")
                 choice = input("Enter Selection: ")
@@ -273,6 +273,57 @@ def update_expense(user, jwt_token, expense_id):
                 else:
                     print("Invalid selection. Try again.")
                     input("Press enter to continue.") 
+
+
+def delete_expense(user, jwt_token, expense_id):
+    page_header("DELETE PENDING EXPENSES", user["username"], expense_id)
+    delete_result = requests.delete("http://localhost:3000/expense", json={
+                                    "expense_id": expense_id, "user_id": user["id"]}, headers={"Authorization": f"Bearer {jwt_token}"})
+    if delete_result.ok:
+        print(f"Expense ID: {expense_id} deleted successfully.")
+        input("Press enter to return to expenses.")
+    else:
+        print(f"Failed to delete expense ID {expense_id}: {delete_result.json()["error"]}")
+        input("Press enter to return to expenses.")
+    return
+
+def expense_history(user, jwt_token):
+    page_header("EXPENSE HISTORY", user["username"])
+    try:
+        expenses = requests.get("http://localhost:3000/expense/reviewed", headers={
+            "Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"})
+
+        if (expenses.ok):
+            while True:
+                page_header("EXPENSE HISTORY", user["username"])
+                if len(expenses.json()) == 0:
+                    input("No expense history to display. Press enter to return to main menu.")
+                    return
+                rows = []
+                for expense, approval in expenses.json():
+                    row = {**expense, "status": approval['status'], "comment": approval['comment'], "reviewer": approval['reviewer'], "review_date": approval['review_date']}
+                    rows.append(row)
+                df = pd.DataFrame(rows)
+                pd.set_option("display.float_format", "{:,.2f}".format)
+                df = df[["id", "amount", "description", "category", "date", "status", "comment", "reviewer", "review_date"]]
+                print(df)
+                print("1. Return to Main Menu")
+                choice = input("Enter Selection: ")
+                if choice == "1":
+                    return
+                else:
+                    print("Invalid selection. Try again.")
+                    input("Press enter to continue.")
+
+        else: 
+            page_header("EXPENSE HISTORY", user["username"])
+            print(f"Failed to Display Expense History: {expenses.json()["error"]}")
+            input("Press enter to return to main menu.")
+            return
+    except:
+        print("An error occurred!")
+        input("Press enter to return to main menu.")
+        return
 
 def page_header(page_title, username=None, expense_id=None, field=None):
     clear_screen()
@@ -292,16 +343,6 @@ def validate_date(date):
         return True
     except ValueError:
         return False
-
-def delete_expense(user, jwt_token, expense_id):
-    delete_result = requests.delete("http://localhost:3000/expense", json={"expense_id":expense_id, "user_id":user["id"]}, headers={"Authorization": f"Bearer {jwt_token}"})
-    if delete_result.ok:
-        print(f"Expense ID: {expense_id} deleted successfully.")
-        input("Press enter to return to expenses.")
-    else:
-        print(f"Expense ID: {expense_id} failed to delete.")
-        input("Press enter to return to expenses.")
-    return
             
 def clear_screen():
     # ANSI: move cursor home + clear screen + clear scrollback
@@ -333,14 +374,17 @@ if __name__ == "__main__":
             user = requests.get("http://localhost:3000/user", headers={"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"}).json()
             page_header("MAIN MENU", user["username"])
             print("1. Insert Expense")
-            print("2. View Expenses")
-            print("3. Quit")
+            print("2. Modify Pending Expense")
+            print("3. View Expense History")
+            print("4. Quit")
             choice = input("Enter Selection: ")
             if (choice == "1"):
                 insert_expense(user, jwt_token)
             elif (choice == "2"):
-                view_expenses(user, jwt_token)
+                pending_expenses(user, jwt_token)
             elif (choice == "3"):
+                expense_history(user, jwt_token)
+            elif (choice == "4"):
                 print("Goodbye!")
                 break
             else:

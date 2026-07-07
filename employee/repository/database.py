@@ -44,9 +44,9 @@ class DatabaseConnection:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY,
-                    username VARCHAR(255) UNIQUE NOT NULL,
-                    password VARCHAR(255) NOT NULL,
-                    role VARCHAR(50) NOT NULL
+                    username TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    role TEXT NOT NULL
                 ) """) 
             conn.commit()
 
@@ -54,11 +54,11 @@ class DatabaseConnection:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS expenses (
                     id INTEGER PRIMARY KEY,
-                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                    amount NUMERIC CHECK(amount>0),
-                    description VARCHAR(255) NOT NULL,
-                    category VARCHAR(50) NOT NULL,
-                    date DATE NOT NULL
+                    user_id INTEGER NOT NULL REFERENCES users(id),
+                    amount REAL NOT NULL,
+                    description TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    date TEXT NOT NULL
                 ) """) 
             conn.commit()
 
@@ -66,11 +66,11 @@ class DatabaseConnection:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS approvals (
                     id INTEGER PRIMARY KEY,
-                    expense_id INTEGER REFERENCES expenses(id) ON DELETE CASCADE,
-                    status VARCHAR(50) NOT NULL,
+                    expense_id INTEGER REFERENCES expenses(id),
+                    status TEXT NOT NULL,
                     reviewer INTEGER,
-                    comment VARCHAR(255),
-                    review_date DATE
+                    comment TEXT,
+                    review_date TEXT
                 )
             """)
             conn.commit()

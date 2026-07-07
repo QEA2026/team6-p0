@@ -1,10 +1,13 @@
+from datetime import datetime
 from flask import Flask, request, jsonify, current_app
 from repository import (
     DatabaseConnection,
     User,
     UserRepository,
     Expense,
-    ExpenseRepository
+    ExpenseRepository,
+    Approval,
+    ApprovalRepository
 )
 from service import AuthenticationService, ExpenseService
 
@@ -22,11 +25,12 @@ def create_app():
     # Initalize repositories
     user_repository = UserRepository(db_connection)
     expense_repository = ExpenseRepository(db_connection)
+    approval_repository = ApprovalRepository(db_connection)
 
     # Initalize services
     jwt_secret_key = app.config['SECRET_KEY']  # Use Flask's secret key for JWT
     auth_service = AuthenticationService(user_repository, jwt_secret_key)
-    expense_service = ExpenseService(expense_repository)
+    expense_service = ExpenseService(expense_repository, approval_repository)
 
 
     # Inject service into flask app content
@@ -56,6 +60,8 @@ def create_app():
             # User does not exist in the db
             return jsonify({"error": "Unauthorized"}), 401
 
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         except Exception as e:
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
@@ -85,6 +91,8 @@ def create_app():
             
             # User does not exist in the db
             return jsonify({"error": "Unauthorized"}), 401
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         except Exception as e:
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
@@ -122,14 +130,16 @@ def create_app():
             expense = expense_service.submit_expense(user_id, amount, description, category, date)
             return jsonify({"message":f"Successful Inserted Expense ID {expense.id}"})
 
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         except Exception as e:
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
     
-    # GET all expenses
-    @app.route("/expense", methods=['GET'])
-    def get_employee_expense_history():
-        """Returns all expenses for the current user"""
+    # GET all pending expenses
+    @app.route("/expense/pending", methods=['GET'])
+    def get_employee_pending_expense_history():
+        """Returns all pending expenses for the current user"""
         try:
             # Authenticate user
             auth = request.headers.get("Authorization")  # if missing, none
@@ -152,9 +162,46 @@ def create_app():
             user_id = user.id
 
             # Return all expenses for the user
-            expenses = expense_service.get_user_expenses(user_id)
+            expenses_approvals = expense_service.get_expense_history(user_id, "pending")
 
-            return jsonify(expenses)
+            return jsonify(expenses_approvals)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        except Exception as e:
+            current_app.logger.exception(e)
+            return jsonify({"error": "Bad Request"}), 400
+        
+    # GET all reviewed expenses
+    @app.route("/expense/reviewed", methods=['GET'])
+    def get_employee_reviewed_expense_history():
+        """Returns all reviewed expenses for the current user"""
+        try:
+            # Authenticate user
+            auth = request.headers.get("Authorization")  # if missing, none
+
+            if not auth or not auth.startswith("Bearer "):
+                return jsonify({"errror": "Missing or malformed Authentication header"}), 401
+
+            jwt_token = auth.split(" ", 1)[1]
+
+            validate = auth_service.validate_jwt_token(jwt_token)
+            if not validate:
+                return jsonify({"error": "Unauthorized"}), 401
+
+            # Get user from token
+            user = auth_service.get_user_from_token(jwt_token)
+
+            if not user:
+                return jsonify({"error": "Unauthorized"}), 401
+
+            user_id = user.id
+
+            # Return all expenses for the user
+            expenses_approvals = expense_service.get_expense_history(user_id, "pending", True)
+
+            return jsonify(expenses_approvals)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         except Exception as e:
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
@@ -189,6 +236,8 @@ def create_app():
             
             return jsonify(expense)
             
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         except Exception as e:
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
@@ -228,6 +277,8 @@ def create_app():
             updated_expense = expense_service.update_expense(expense_id, user_id, amount, description, category, date)
             return jsonify(updated_expense)
 
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         except Exception as e:
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
@@ -259,10 +310,12 @@ def create_app():
             result = expense_service.delete_expense(expense_id, user_id)
 
             if not result:
-                return jsonify({"error": "Failed to delete expense."}), 400
+                return jsonify({"error": "Unauthorized or expense does not exist."}), 400
             
             return jsonify({"message": "Successfully deleted expense"})
             
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
         except Exception as e:
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
@@ -276,6 +329,8 @@ def create_sample_data():
     db_connection.initialize_database()
 
     user_repository = UserRepository(db_connection)
+    expense_repository = ExpenseRepository(db_connection)
+    approval_repository = ApprovalRepository(db_connection)
 
     # Create a sample employee user if it doesn't exist
     if not user_repository.find_by_username("e"):
@@ -285,7 +340,37 @@ def create_sample_data():
             role="Employee"
         )
         user_repository.create(sample_employee)
-        print("Created Sample Employee: employee1/password1")
+        print("Created Sample Employee: e/e")
+
+        # Seed a few expenses with varied approval statuses so the
+        # expense history page has something to show.
+        review_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sample_expenses = [
+            # (amount, description, category, date, status, comment)
+            (42.50, "Team lunch", "Meals", "2026-06-15 12:30:00", "approved", "Looks good"),
+            (120.00, "Hotel night", "Lodging", "2026-06-18 20:00:00", "approved", "Approved for conference"),
+            (15.75, "Office pens", "Supplies", "2026-06-20 09:00:00", "denied", "Missing receipt"),
+            (60.00, "Client dinner", "Entertainment", "2026-06-22 19:00:00", "pending", None),
+        ]
+
+        for amount, description, category, date, status, comment in sample_expenses:
+            expense = expense_repository.create(Expense(
+                user_id=sample_employee.id,
+                amount=amount,
+                description=description,
+                category=category,
+                date=date
+            ))
+            # create() seeds a 'pending' approval; move reviewed ones off pending
+            if status != "pending":
+                approval_repository.update_status(
+                    expense.id,
+                    status,
+                    reviewer_id=None,
+                    comment=comment,
+                    review_date=review_date
+                )
+        print(f"Seeded {len(sample_expenses)} sample expenses for e")
         
 if __name__ == "__main__":
         # Create app
