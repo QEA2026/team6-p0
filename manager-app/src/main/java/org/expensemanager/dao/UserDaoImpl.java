@@ -63,4 +63,27 @@ public class UserDaoImpl implements UserDao {
         return null;
     }
 
+    @Override
+    public User getById(int id) {
+        String sql = "SELECT * FROM users WHERE id = ?";
+        try(Connection conn = ConnectionUtil.getConnection();
+            PreparedStatement ps = conn.prepareStatement(sql)){
+            ps.setInt(1, id);
+            try(ResultSet rs = ps.executeQuery()){
+                if(rs.next()){
+                    return new User(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("role")
+                    );
+                }
+            }
+        }
+        catch (SQLException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }

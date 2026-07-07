@@ -2,6 +2,7 @@ package org.expensemanager.service;
 import org.expensemanager.dao.ApprovalDao;
 import org.expensemanager.dao.ExpenseDao;
 import org.expensemanager.model.Expense;
+import org.expensemanager.dao.UserDao;
 
 import java.util.ArrayList;
 
@@ -9,10 +10,12 @@ public class ExpenseService {
 
     private ExpenseDao expenseDao;
     private ApprovalDao approvaldao;
+    private UserDao userDao;
 
-    public ExpenseService(ExpenseDao expenseDao, ApprovalDao approvaldao){
+    public ExpenseService(ExpenseDao expenseDao, ApprovalDao approvaldao, UserDao userDao){
         this.expenseDao = expenseDao;
         this.approvaldao = approvaldao;
+        this.userDao = userDao;
     }
 
 
