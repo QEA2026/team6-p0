@@ -1,6 +1,7 @@
 package org.expensemanager.service;
 import org.expensemanager.dao.ApprovalDao;
 import org.expensemanager.dao.ExpenseDao;
+import org.expensemanager.model.Approval;
 import org.expensemanager.model.Expense;
 import org.expensemanager.dao.UserDao;
 
@@ -25,15 +26,19 @@ public class ExpenseService {
 
     public void reviewExpense(int expenseId, String status, int reviewer, String comment){
         Expense expense = expenseDao.getById(expenseId);
+        Approval approval = approvaldao.getByExpenseId(expenseId);
+
         if(!status.equalsIgnoreCase("approved") && !status.equalsIgnoreCase("denied")){
             System.out.println("Not valid status, please enter 'approved' or 'denied'");
         } else if (expense == null) {
             System.out.println("Expense ID doesn't match Database");
-        } else if(approvaldao.getByExpenseId(expenseId)!=null){
+        } else if (approval == null) {
+            System.out.println("No approval record exists for this expense");
+        } else if (!approval.getStatus().equalsIgnoreCase("pending")) {
             System.out.println("This expense has already been reviewed!");
         } else {
             status = status.toLowerCase();
-            approvaldao.submitApproval(expenseId,status,reviewer,comment);
+            approvaldao.submitApproval(expenseId, status, reviewer, comment);
         }
     }
 
@@ -47,7 +52,7 @@ public class ExpenseService {
     }
 
     public ArrayList<Expense> generateUserReport(int id){
-        if(expenseDao.userReport(id)==null){
+        if(userDao.getById(id)==null){
             System.out.println("No matching user ID exists in Database ");
             return null;
         }

@@ -19,11 +19,13 @@ public class ApprovalDaoImpl implements ApprovalDao {
             ps.setInt(1, id);
             try(ResultSet rs = ps.executeQuery()){
                 if(rs.next()){
+                    int reviewerRaw = rs.getInt("reviewer");
+                    Integer reviewer = rs.wasNull() ? null : reviewerRaw;
                     return new Approval(
                             rs.getInt("id"),
                             rs.getInt("expense_id"),
                             rs.getString("status"),
-                            rs.getObject("reviewer", Integer.class),
+                            reviewer,
                             rs.getString("comment"),
                             rs.getString("review_date")
                     );
@@ -44,11 +46,13 @@ public class ApprovalDaoImpl implements ApprovalDao {
             ps.setInt(1, expenseId);
             try(ResultSet rs = ps.executeQuery()){
                 if(rs.next()){
+                    int reviewerRaw = rs.getInt("reviewer");
+                    Integer reviewer = rs.wasNull() ? null : reviewerRaw;
                     return new Approval(
                             rs.getInt("id"),
                             rs.getInt("expense_id"),
                             rs.getString("status"),
-                            rs.getObject("reviewer", Integer.class),
+                            reviewer,
                             rs.getString("comment"),
                             rs.getString("review_date")
                     );
@@ -65,8 +69,8 @@ public class ApprovalDaoImpl implements ApprovalDao {
         String reviewDate = LocalDate.now().toString();
         String sql = """
                 UPDATE approvals
-                SET status = ?, reviewer = ?, comment = ?, review_date = ?;
-                WHERE expenseId = ?
+                SET status = ?, reviewer = ?, comment = ?, review_date = ?
+                WHERE expense_id = ?;
                 """;
         try(Connection conn = ConnectionUtil.getConnection();
             PreparedStatement ps = conn.prepareStatement(sql)){

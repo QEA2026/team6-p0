@@ -151,10 +151,10 @@ public class ExpenseDaoImpl implements ExpenseDao {
     @Override
     public ArrayList<Expense> categoryReport(String category){
         String sql = """
-               SELECT *
-               FROM expenses
-               WHERE category = ?;
-                """;
+            SELECT *
+            FROM expenses
+            WHERE LOWER(category) = LOWER(?);
+             """;
         ArrayList<Expense> expenses = new ArrayList<>();
         try(Connection conn = ConnectionUtil.getConnection();
             PreparedStatement ps = conn.prepareStatement(sql)){
