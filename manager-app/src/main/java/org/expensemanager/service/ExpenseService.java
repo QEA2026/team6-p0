@@ -61,13 +61,13 @@ public class ExpenseService {
             return expenseDao.categoryReport(category);
         }
     }
-    public ArrayList<Expense> generateDateReport(String start, String end){
-        if(expenseDao.dateReport(start, end)==null){
+    public ArrayList<Expense> generateDateReport(String start, String end) {
+        if (expenseDao.dateReport(start, end) == null) {
             System.out.println("No expenses in entered date range");
             return null;
-        }
-        else {
+        } else {
             return expenseDao.dateReport(start, end);
         }
+    }
 
 }
