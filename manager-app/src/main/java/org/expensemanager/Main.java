@@ -50,8 +50,8 @@ public class Main {
                     switch (choice) {
                         case "1" -> viewPending(expenseService);
                         case "2" -> reviewExpense(expenseService, manager);
-                        case "3" -> updateComment(expenseService, approvalDao);
-                        case "4" -> reportsMenu(expenseService);
+                        case "3" -> updateComment(expenseService, expenseDao, approvalDao);
+                        case "4" -> reportsMenu(expenseService, expenseDao, userDao);
                         case "5" -> running = false;
                         default -> System.out.println("Please enter a number from 1 to 5.");
                     }
@@ -143,7 +143,27 @@ public class Main {
         expenseService.reviewExpense(expenseId, status, manager.getId(), comment);
     }
 
-    private static void updateComment(ExpenseService expenseService, ApprovalDao approvalDao) {
+    private static void updateComment(ExpenseService expenseService, ExpenseDao expenseDao, ApprovalDao approvalDao) {
+        //only show expenses whose approval has been decided (approved/denied);
+        //those are the only comments that can be edited
+        ArrayList<Expense> all = expenseDao.getAllExpenses();
+        if (all == null) {
+            all = new ArrayList<>();
+        }
+        ArrayList<Expense> editable = new ArrayList<>();
+        for (Expense e : all) {
+            Approval a = approvalDao.getByExpenseId(e.getId());
+            if (a != null && a.getStatus() != null && !a.getStatus().equalsIgnoreCase("pending")) {
+                editable.add(e);
+            }
+        }
+        if (editable.isEmpty()) {
+            System.out.println("No reviewed expenses yet - approve or deny one first.");
+            return;
+        }
+        System.out.println("\nExpenses you can edit the comment on:");
+        printExpenses(editable);
+
         Integer expenseId = readInt("Expense ID whose comment you want to change (blank to cancel): ");
         if (expenseId == null) {
             return;
@@ -169,7 +189,7 @@ public class Main {
         System.out.println("Comment updated.");
     }
 
-    private static void reportsMenu(ExpenseService expenseService) {
+    private static void reportsMenu(ExpenseService expenseService, ExpenseDao expenseDao, UserDao userDao) {
         System.out.println("""
 
                 ---- Reports ----
@@ -181,12 +201,16 @@ public class Main {
         String choice = scanner.nextLine().trim();
         switch (choice) {
             case "1" -> {
+                //show which users exist so the manager knows which id to pick
+                printAllUsers(userDao);
                 Integer userId = readInt("Employee user ID (blank to cancel): ");
                 if (userId != null) {
                     printExpenses(expenseService.generateUserReport(userId));
                 }
             }
             case "2" -> {
+                //show which categories exist so the manager knows what to type
+                printAllCategories(expenseDao);
                 System.out.print("Category (blank to cancel): ");
                 String category = scanner.nextLine().trim();
                 if (!category.isEmpty()) {
@@ -209,6 +233,38 @@ public class Main {
                 printExpenses(expenseService.generateDateReport(start.toString(), end.toString()));
             }
             default -> System.out.println("Please enter 1, 2, or 3.");
+        }
+    }
+
+    //lists every user so the manager knows which id to pick for a user report
+    private static void printAllUsers(UserDao userDao) {
+        ArrayList<User> users = userDao.getAllUsers();
+        if (users == null || users.isEmpty()) {
+            System.out.println("No users found.");
+            return;
+        }
+        System.out.println("Users:");
+        for (User u : users) {
+            System.out.println("  " + u.getId() + " - " + u.getUsername() + " (" + u.getRole() + ")");
+        }
+    }
+
+    //lists the distinct categories currently used by any expense
+    private static void printAllCategories(ExpenseDao expenseDao) {
+        ArrayList<Expense> all = expenseDao.getAllExpenses();
+        if (all == null) {
+            all = new ArrayList<>();
+        }
+        ArrayList<String> categories = new ArrayList<>();
+        for (Expense e : all) {
+            if (!categories.contains(e.getCategory())) {
+                categories.add(e.getCategory());
+            }
+        }
+        if (categories.isEmpty()) {
+            System.out.println("No categories found.");
+        } else {
+            System.out.println("Available categories: " + categories);
         }
     }
 

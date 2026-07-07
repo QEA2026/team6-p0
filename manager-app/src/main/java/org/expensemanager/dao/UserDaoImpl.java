@@ -1,7 +1,10 @@
 package org.expensemanager.dao;
+import org.expensemanager.model.Expense;
 import org.expensemanager.model.User;
 import org.expensemanager.util.ConnectionUtil;
+
 import java.sql.*;
+import java.util.ArrayList;
 
 public class UserDaoImpl implements UserDao {
     @Override //Overriding the getByUsername method in UserDao interface
@@ -84,6 +87,27 @@ public class UserDaoImpl implements UserDao {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public ArrayList<User> getAllUsers(){
+        String sql = "SELECT * FROM users";
+        ArrayList<User> users = new ArrayList<>();          // declared BEFORE the try
+        try(Connection conn = ConnectionUtil.getConnection();
+            Statement s = conn.createStatement();
+            ResultSet rs = s.executeQuery(sql)) {           // rs can go in the try-with-resources too
+            while (rs.next()) {
+                users.add(new User(
+                        rs.getInt("id"),
+                        rs.getString("username"),
+                        rs.getString("password"),
+                        rs.getString("role")
+                ));
+            }
+        } catch (SQLException e){                            // catch immediately follows the try
+            e.printStackTrace();
+        }
+        return users;                                       // in scope, and after the whole try/catch
     }
 
 }
