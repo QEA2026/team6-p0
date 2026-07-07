@@ -44,25 +44,35 @@ def login_page():
 
 def insert_expense(user, jwt_token):
         while True:
-            page_header("INSERT EXPENSE", user["username"])
             amount = None
             # Validate user input for amount
             while amount == None:
+                page_header("INSERT EXPENSE", user["username"], None, "AMOUNT")
                 try:
                     amount = float(input("Enter Expense Amount: "))
                 except ValueError:
-                    print("Invalid number entered. Try again.")
+                    input("Invalid number entered. Press enter to try again.")
+            page_header("INSERT EXPENSE", user["username"], None, "DESCRIPTION")
             description = input("Enter Description: ")
+            category = None
+            while category == None:
+                page_header("INSERT EXPENSE", user["username"], None, "CATEGORY")
+                category = input("Enter Category: ")
+                if category.strip().lower() not in ["supplies", "meals", "entertainment", "travel", "lodging", "other"]:
+                    category = None
+                    input("Invalid category. Please choose one of: Supplies, Meals, Entertainment, Travel, Lodging, Other. Press enter to try again.")
+
             date = None
             while date == None:
+                page_header("INSERT EXPENSE", user["username"], None, "DATE")
                 date = input("Enter Date (Press Enter to Skip): ")
                 if date == "":
                     date = None
                     break
                 if not validate_date(date):
                     date = None
-                    input("Invalid date entered. Try again.")
-            expense = requests.post("http://localhost:3000/expense", json={"user_id": user["id"], "amount": amount, "description": description, "date": date}, 
+                    input("Invalid date. Please use the format YYYY-MM-DD HH:MM:SS. Press enter to try again.")
+            expense = requests.post("http://localhost:3000/expense", json={"user_id": user["id"], "amount": amount, "description": description, "category": category, "date": date}, 
                                     headers={"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"})
             if(expense.ok):
                 choice = None
@@ -73,7 +83,7 @@ def insert_expense(user, jwt_token):
                     print("2. Main Menu")
                     choice = input("Enter Selection: ")
                     if (choice == "1"):
-                        pass
+                        break
                     elif (choice == "2"):
                         return
                     else:
@@ -105,6 +115,9 @@ def view_expenses(user, jwt_token):
             if (expenses.ok):
                 while True:
                     page_header("EXPENSES", user["username"])
+                    if len(expenses.json()) == 0:
+                        input("No expenses to display. Press Enter to return to main menu.")
+                        return
                     df = pd.DataFrame(expenses.json())
                     pd.set_option("display.float_format", "{:,.2f}".format)
                     df = df[["id", "amount", "description", "date"]]
@@ -140,6 +153,7 @@ def view_expenses(user, jwt_token):
             print("An error occurred! Please try again.")
             traceback.print_exc()
             input("Press enter to continue.")
+            break
 
 def update_expense(user, jwt_token, expense_id):
     while True:
@@ -148,14 +162,16 @@ def update_expense(user, jwt_token, expense_id):
                                headers={"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"})
         amount = expense.json()["amount"]
         description = expense.json()["description"]
+        category = expense.json()["category"]
         date = expense.json()["date"]
         if expense.ok:
             while True:
                 page_header("UPDATE EXPENSE", user["username"], expense_id)
                 print(f"1: Amount - {amount}")
                 print(f"2: Description - {description}")
-                print(f"3: Date - {date}")
-                print("4: Return to Expenses")
+                print(f"3: Category - {category}")
+                print(f"4: Date - {date}")
+                print("5: Return to Expenses")
                 choice = input("Enter Selection: ")
                 if (choice == "1"):
                     new_amount = None
@@ -166,7 +182,8 @@ def update_expense(user, jwt_token, expense_id):
                         except ValueError:
                             input("Please input a valid number. Press enter to try again.")
                     updated_expense = requests.patch("http://localhost:3000/expense",
-                                   json={"user_id": user["id"], "id": expense_id, "amount":new_amount, "description":description, "date":date},
+                                   json={"user_id": user["id"], "id": expense_id, 
+                                         "amount":new_amount, "description":description, "category": category, "date":date},
                                    headers={"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"})
                     if updated_expense.ok:
                         print("Updated Amount Successfully.")
@@ -178,13 +195,12 @@ def update_expense(user, jwt_token, expense_id):
                         break
                 elif (choice == "2"):
                     new_description = None
-                    while not new_description:
-                        page_header("UPDATE EXPENSE",user["username"], expense_id, "DESCRIPTION")
-                        new_description = input("Enter updated description: ")
+                    page_header("UPDATE EXPENSE",user["username"], expense_id, "DESCRIPTION")
+                    new_description = input("Enter updated description: ")
 
                     updated_expense = requests.patch("http://localhost:3000/expense",
                                                      json={"user_id": user["id"], "id": expense_id,
-                                                           "amount": amount, "description": new_description, "date": date},
+                                                           "amount": amount, "description": new_description, "category": category, "date": date},
                                                      headers={"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"})
                     if updated_expense.ok:
                         print("Updated Description Successfully.")
@@ -195,16 +211,38 @@ def update_expense(user, jwt_token, expense_id):
                         input("Press enter to return to update page.")
                         break
                 elif (choice == "3"):
+                    new_category = None
+                    while not new_category:
+                        page_header("UPDATE EXPENSE",
+                                    user["username"], expense_id, "CATEGORY")
+                        new_category = input("Enter updated category: ")
+                        if new_category.strip().lower() not in ["supplies", "meals", "entertainment", "travel", "lodging", "other"]:
+                            new_category = None
+                            input("Invalid category. Please choose one of: Supplies, Meals, Entertainment, Travel, Lodging, Other. Press enter to try again.")
+
+                    updated_expense = requests.patch("http://localhost:3000/expense",
+                                                     json={"user_id": user["id"], "id": expense_id,
+                                                           "amount": amount, "description": description, "category":new_category, "date": date},
+                                                     headers={"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"})
+                    if updated_expense.ok:
+                        print("Updated Category Successfully.")
+                        input("Press enter to return to update page.")
+                        break
+                    else:
+                        print("Failed to update category.")
+                        input("Press enter to return to update page.")
+                        break
+                elif (choice == "4"):
                     new_date = None
                     while not new_date:
                         page_header("UPDATE EXPENSE", user["username"], expense_id, "DATE")
                         new_date = input("Enter updated date: ")
                         if not validate_date(new_date):
                             new_date = None
-                            input("Please input a valid date. Press enter to try again.")
+                            input("Invalid date. Please use the format YYYY-MM-DD HH:MM:SS. Press enter to try again.")
                     updated_expense = requests.patch("http://localhost:3000/expense",
                                                      json={"user_id": user["id"], "id": expense_id,
-                                                           "amount": amount, "description": description, "date": new_date},
+                                                           "amount": amount, "description": description, "category": category, "date": new_date},
                                                      headers={"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"})
                     if updated_expense.ok:
                         print("Updated Date Successfully.")
@@ -214,7 +252,7 @@ def update_expense(user, jwt_token, expense_id):
                         print("Failed to update date.")
                         input("Press enter to return to update page.")
                         break
-                elif (choice == "4"):
+                elif (choice == "5"):
                     return
                 else:
                     print("Invalid selection. Try again.")
@@ -245,7 +283,7 @@ def page_header(page_title, username=None, expense_id=None, field=None):
     if expense_id:
         print("=" * 12 + f" EXPENSE ID: {expense_id} " + "=" * 12)
     if field:
-        print("=" * 12 + f" UPDATING: {field} " + "=" * 12)
+        print("=" * 12 + f" FIELD: {field} " + "=" * 12)
     return
 
 def validate_date(date):

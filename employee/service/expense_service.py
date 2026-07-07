@@ -8,12 +8,18 @@ class ExpenseService:
     def __init__(self, expense_repository: ExpenseRepository):
         self.expense_repository = expense_repository
 
-    def submit_expense(self, user_id: int, amount: float, description: str, date: str = None) -> Expense:
+    def submit_expense(self, user_id: int, amount: float, description: str, category: str, date: str = None) -> Expense:
         # Submit a new expense for the employee
         if amount <= 0:
             raise ValueError("Amount must be greater than zero.")
-        if not description:
+        if not description.strip():
             raise ValueError("Description is required")
+        if not category.strip():
+            raise ValueError("Category is required")
+        
+        # Enforce Categories
+        if category.strip().lower() not in ["supplies", "meals", "entertainment", "travel", "lodging", "other"]:
+            raise ValueError("Category label must exist.")
         
         # Use current date if none is provided
         if not date:
@@ -23,6 +29,7 @@ class ExpenseService:
             user_id=user_id,
             amount=amount,
             description=description,
+            category=category.capitalize(),
             date=date
         )
         return self.expense_repository.create(expense)
@@ -34,7 +41,7 @@ class ExpenseService:
             return expense
         return None
 
-    def update_expense(self, expense_id, user_id, amount, description, date) -> Optional[Expense]:
+    def update_expense(self, expense_id, user_id, amount, description, category, date) -> Optional[Expense]:
         # Update expense by id, validating user_id matches
         result = self.expense_repository.find_by_id(expense_id)
         
@@ -47,6 +54,12 @@ class ExpenseService:
             raise ValueError("Amount must be greater than zero.")
         if not description.strip():
             raise ValueError("Description is required")
+        if not category.strip():
+            raise ValueError("Category is required")
+        
+        # Enforce Categories
+        if category.strip().lower() not in ["supplies", "meals", "entertainment", "travel", "lodging", "other"]:
+            raise ValueError("Category label must exist.")
 
         # Use current date if none is provided
         if not date:
@@ -54,6 +67,7 @@ class ExpenseService:
         
         result.amount = amount
         result.description = description
+        result.category = category.capitalize()
         result.date = date
 
         return self.expense_repository.update(result)

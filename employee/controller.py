@@ -116,8 +116,10 @@ def create_app():
             user_id = data['user_id']
             amount = data['amount']
             description = data['description']
+            category = data['category']
+            date = data['date']
 
-            expense = expense_service.submit_expense(user_id, amount, description)
+            expense = expense_service.submit_expense(user_id, amount, description, category, date)
             return jsonify({"message":f"Successful Inserted Expense ID {expense.id}"})
 
         except Exception as e:
@@ -219,10 +221,11 @@ def create_app():
             expense_id = data['id']
             amount = data['amount']
             description = data['description']
+            category = data['category']
             date = data['date']
             
             # Update and return expense
-            updated_expense = expense_service.update_expense(expense_id, user_id, amount, description, date)
+            updated_expense = expense_service.update_expense(expense_id, user_id, amount, description, category, date)
             return jsonify(updated_expense)
 
         except Exception as e:
@@ -255,7 +258,7 @@ def create_app():
             
             result = expense_service.delete_expense(expense_id, user_id)
 
-            if result == False:
+            if not result:
                 return jsonify({"error": "Failed to delete expense."}), 400
             
             return jsonify({"message": "Successfully deleted expense"})
@@ -266,8 +269,6 @@ def create_app():
 
             
     return app
-        
-
 
 def create_sample_data():
     """Create a sample user for testing"""
