@@ -6,8 +6,9 @@ from typing import Optional
 
 @dataclass
 class Expense:
-    id: Optional[int]
     user_id: int
     amount: float
     description: str
+    category: str
     date: str
+    id: Optional[int] = None

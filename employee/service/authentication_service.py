@@ -31,10 +31,10 @@ class AuthenticationService:
             'user_id': user.id,
             'username': user.username,
             'role': user.role,
-            'exp': datetime(timezone.utc) + timedelta(hours=self.token_expiry_hours),
-            'iat': datetime(timezone.utc)
+            'exp': datetime.now(timezone.utc) + timedelta(hours=self.token_expiry_hours),
+            'iat': datetime.now(timezone.utc)
         }
-        # Create jwt key
+        # Create jwt token
         return jwt.encode(payload, self.jwt_secret_key, self.jwt_algorithm)
     
     def validate_jwt_token(self, token: str) -> Optional[Dict[str,Any]]:
