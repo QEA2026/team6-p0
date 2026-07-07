@@ -13,3 +13,7 @@ __pycache__/
 
 # Editors
 .vscode
+
+# Local database (not shared)
+p0.db
+*.db
