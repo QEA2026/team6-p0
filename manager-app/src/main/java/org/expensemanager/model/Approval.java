@@ -9,6 +9,7 @@ public class Approval {
     private String comment;
     private String review_date;
 
+
     //constructor
     public Approval(int id, int expense_id, String status, Integer reviewer, String comment, String review_date){
         this.id = id;

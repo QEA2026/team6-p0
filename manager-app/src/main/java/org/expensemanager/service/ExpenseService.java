@@ -44,7 +44,7 @@ public class ExpenseService {
     }
 
     public ArrayList<Expense> generateUserReport(int id){
-        if(expenseDao.getById(id)==null){
+        if(expenseDao.userReport(id)==null){
             System.out.println("No matching user ID exists in Database ");
             return null;
         }
@@ -53,21 +53,19 @@ public class ExpenseService {
         }
     }
     public ArrayList<Expense> generateCategoryReport(String category){
-        if(expenseDao.categoryReport(category)==null){
-            System.out.println("No expenses in category" + category);
-            return null;
+        ArrayList<Expense> expenses = expenseDao.categoryReport(category);
+        if(expenses.isEmpty()){
+            System.out.println("No expenses in category " + category);
         }
-        else{
-            return expenseDao.categoryReport(category);
-        }
+        return expenses;
     }
+
     public ArrayList<Expense> generateDateReport(String start, String end) {
-        if (expenseDao.dateReport(start, end) == null) {
+        ArrayList<Expense> expenses = expenseDao.dateReport(start, end);
+        if(expenses.isEmpty()){
             System.out.println("No expenses in entered date range");
-            return null;
-        } else {
-            return expenseDao.dateReport(start, end);
         }
+        return expenses;
     }
 
 }

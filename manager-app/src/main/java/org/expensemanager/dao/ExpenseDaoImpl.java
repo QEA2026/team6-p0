@@ -95,7 +95,7 @@ public class ExpenseDaoImpl implements ExpenseDao {
                 SELECT e.*
                 FROM expenses e
                 LEFT JOIN approvals a ON e.id = a.expense_id
-                WHERE a.id IS NULL;
+                WHERE status = 'pending';
                 """;
         ArrayList<Expense> expenses = new ArrayList<>();
         try(Connection conn = ConnectionUtil.getConnection();
