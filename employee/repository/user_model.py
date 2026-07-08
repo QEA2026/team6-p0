@@ -13,5 +13,5 @@ class User:
     id: Optional[int] = None
 
     def __post_init__(self):
-        if self.role != 'Employee':
-            raise ValueError("Role must be 'Employee'")
+        if self.role not in ('Employee', 'Manager'):
+            raise ValueError("Role must be 'Employee' or 'Manager'")

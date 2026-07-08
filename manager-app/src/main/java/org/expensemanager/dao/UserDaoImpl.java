@@ -1,5 +1,4 @@
 package org.expensemanager.dao;
-import org.expensemanager.model.Expense;
 import org.expensemanager.model.User;
 import org.expensemanager.util.ConnectionUtil;
 
