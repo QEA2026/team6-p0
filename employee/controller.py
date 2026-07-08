@@ -206,10 +206,10 @@ def create_app():
             current_app.logger.exception(e)
             return jsonify({"error": "Bad Request"}), 400
         
-    # GET expense by id
-    @app.route("/expense/<expense_id>", methods=['GET'])
+    # GET a pending expense by id
+    @app.route("/expense/pending/<expense_id>", methods=['GET'])
     def get_expense_by_id(expense_id):
-        try: 
+        try:
             # Authenticate user
             auth = request.headers.get("Authorization")  # if missing, none
 
@@ -221,19 +221,25 @@ def create_app():
             validate = auth_service.validate_jwt_token(jwt_token)
             if not validate:
                 return jsonify({"error": "Unauthorized"}), 401
-            
+
             # Get user from token
             user = auth_service.get_user_from_token(jwt_token)
 
             if not user:
                 return jsonify({"error": "Unauthorized"}), 401
-            
-            # Get expense by id
-            expense = expense_service.get_expense_by_id(expense_id, user.id)
 
-            if not expense:
+            # Get expense with its approval status
+            result = expense_service.get_expense_with_status(expense_id, user.id)
+
+            if not result:
                 return jsonify({"error": "Unauthorized or expense does not exist."}), 400
-            
+
+            expense, approval = result
+
+            # Only pending expenses may be opened for editing
+            if approval.status != 'pending':
+                return jsonify({"error": "Cannot update expense that has been reviewed."}), 400
+
             return jsonify(expense)
             
         except ValueError as e:
@@ -275,6 +281,10 @@ def create_app():
             
             # Update and return expense
             updated_expense = expense_service.update_expense(expense_id, user_id, amount, description, category, date)
+
+            if not updated_expense:
+                return jsonify({"error": "Unauthorized or expense does not exist."}), 400
+            
             return jsonify(updated_expense)
 
         except ValueError as e:
@@ -333,14 +343,14 @@ def create_sample_data():
     approval_repository = ApprovalRepository(db_connection)
 
     # Create a sample employee user if it doesn't exist
-    if not user_repository.find_by_username("e"):
+    if not user_repository.find_by_username("john"):
         sample_employee = User(
-            username="e",
-            password="e",
+            username="john",
+            password="123",
             role="Employee"
         )
         user_repository.create(sample_employee)
-        print("Created Sample Employee: e/e")
+        print("Created Sample Employee: john/123")
 
         # Seed a few expenses with varied approval statuses so the
         # expense history page has something to show.
@@ -370,8 +380,47 @@ def create_sample_data():
                     comment=comment,
                     review_date=review_date
                 )
-        print(f"Seeded {len(sample_expenses)} sample expenses for e")
-        
+        print(f"Seeded {len(sample_expenses)} sample expenses for john")
+
+    # Create a second sample employee user if it doesn't exist
+    if not user_repository.find_by_username("bob"):
+        second_employee = User(
+            username="bob",
+            password="123",
+            role="Employee"
+        )
+        user_repository.create(second_employee)
+        print("Created Sample Employee: bob/123")
+
+        # Seed expenses with both pending and approved statuses
+        review_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        second_expenses = [
+            # (amount, description, category, date, status, comment)
+            (250.00, "Flight to conference", "Travel", "2026-06-10 08:00:00", "approved", "Approved for Q3 conference"),
+            (85.30, "Taxi fares", "Travel", "2026-06-11 18:45:00", "approved", "Reimbursed"),
+            (45.00, "Team coffee run", "Meals", "2026-06-25 10:15:00", "pending", None),
+            (300.00, "New monitor", "Equipment", "2026-06-28 14:00:00", "pending", None),
+        ]
+
+        for amount, description, category, date, status, comment in second_expenses:
+            expense = expense_repository.create(Expense(
+                user_id=second_employee.id,
+                amount=amount,
+                description=description,
+                category=category,
+                date=date
+            ))
+            # create() seeds a 'pending' approval; move reviewed ones off pending
+            if status != "pending":
+                approval_repository.update_status(
+                    expense.id,
+                    status,
+                    reviewer_id=None,
+                    comment=comment,
+                    review_date=review_date
+                )
+        print(f"Seeded {len(second_expenses)} sample expenses for bob")
+
 if __name__ == "__main__":
         # Create app
     app = create_app()
