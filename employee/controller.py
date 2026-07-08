@@ -52,6 +52,11 @@ def create_app():
 
             user = auth_service.authenticate_user(username, password)
 
+            # Check that user is an employee
+            if user:
+                if user.role != "Employee":
+                    return jsonify({"error": "Unauthorized"}), 403
+
             # If user is valid, return jwt token
             if user:
                 jwt_token = auth_service.generate_jwt_token(user)
@@ -342,6 +347,20 @@ def create_sample_data():
     expense_repository = ExpenseRepository(db_connection)
     approval_repository = ApprovalRepository(db_connection)
 
+    # Create a sample manager user if it doesn't exist. Seed first so its id
+    # can be used as the reviewer on already-reviewed employee expenses.
+    manager = user_repository.find_by_username("manager")
+    if not manager:
+        manager = User(
+            username="manager",
+            password="123",
+            role="Manager"
+        )
+        user_repository.create(manager)
+        print("Created Sample Manager: manager/123")
+
+    reviewer_id = manager.id
+
     # Create a sample employee user if it doesn't exist
     if not user_repository.find_by_username("john"):
         sample_employee = User(
@@ -376,7 +395,7 @@ def create_sample_data():
                 approval_repository.update_status(
                     expense.id,
                     status,
-                    reviewer_id=None,
+                    reviewer_id=reviewer_id,
                     comment=comment,
                     review_date=review_date
                 )
@@ -415,7 +434,7 @@ def create_sample_data():
                 approval_repository.update_status(
                     expense.id,
                     status,
-                    reviewer_id=None,
+                    reviewer_id=reviewer_id,
                     comment=comment,
                     review_date=review_date
                 )
