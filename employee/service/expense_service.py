@@ -109,7 +109,7 @@ class ExpenseService:
 
         # Only allow deletion if expense is still pending
         if approval.status != 'pending':
-            raise ValueError("Cannot delete expense that has been reviewed")
+            raise ValueError("Cannot delete expense that has been reviewed.")
         
         return self.expense_repository.delete(expense.id)
     
